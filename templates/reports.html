@@ -1,0 +1,360 @@
+{% extends "base.html" %}
+
+{% block title %}Reports - Plant Time Tracker{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-filter"></i> Filter Options</h5>
+            </div>
+            <div class="card-body">
+                <form id="filterForm">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label for="filter_worker" class="form-label">Worker</label>
+                            <select class="form-select" id="filter_worker">
+                                <option value="">All Workers</option>
+                                {% for worker in workers %}
+                                <option value="{{ worker.id }}">{{ worker.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="filter_project" class="form-label">Project</label>
+                            <select class="form-select" id="filter_project">
+                                <option value="">All Projects</option>
+                                {% for project in projects %}
+                                <option value="{{ project.id }}">{{ project.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="start_date" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="start_date">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="end_date" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="end_date">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">&nbsp;</label>
+                            <button type="submit" class="btn btn-primary w-100">Apply Filter</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-table"></i> Time Entries</h5>
+                <button class="btn btn-success" onclick="exportToCSV()"><i class="fas fa-download"></i> Export CSV</button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped" id="timeEntriesTable">
+                        <thead>
+                            <tr>
+                                <th>Worker</th>
+                                <th>Project</th>
+                                <th>Department</th>
+                                <th>Sub-Department</th>
+                                <th>Production Line</th>
+                                <th>Start Time</th>
+                                <th>End Time</th>
+                                <th>Hours</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in time_entries %}
+                            <tr>
+                                <td>{{ entry.worker.name }}</td>
+                                <td>{{ entry.project.name }}</td>
+                                <td>{{ entry.sub_department.department.name }}</td>
+                                <td>{{ entry.sub_department.name }}</td>
+                                <td>{{ entry.production_line.name }}</td>
+                                <td>{{ entry.start_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>
+                                    {% if entry.end_time %}
+                                        {{ entry.end_time.strftime('%Y-%m-%d %H:%M') }}
+                                    {% else %}
+                                        <span class="badge bg-warning">Active</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if entry.hours_worked %}
+                                        {{ "%.2f"|format(entry.hours_worked) }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>{{ entry.description or '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Hours by Worker</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="workerHoursChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Hours by Project</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="projectHoursChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-calculator"></i> Summary Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="p-3">
+                            <h3 class="text-primary" id="totalHours">0</h3>
+                            <p class="mb-0">Total Hours</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3">
+                            <h3 class="text-success" id="totalEntries">{{ time_entries|length }}</h3>
+                            <p class="mb-0">Total Entries</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3">
+                            <h3 class="text-info" id="avgHours">0</h3>
+                            <p class="mb-0">Avg Hours/Entry</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3">
+                            <h3 class="text-warning" id="activeWorkers">0</h3>
+                            <p class="mb-0">Active Workers</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let timeEntriesData = {{ time_entries_data | tojson }};
+
+// Calculate and display summary statistics
+function updateSummaryStats() {
+    let totalHours = 0;
+    let completedEntries = 0;
+    let activeWorkers = new Set();
+    
+    timeEntriesData.forEach(entry => {
+        if (entry.hours_worked) {
+            totalHours += entry.hours_worked;
+            completedEntries++;
+        }
+        if (!entry.end_time) {
+            activeWorkers.add(entry.worker.id);
+        }
+    });
+    
+    document.getElementById('totalHours').textContent = totalHours.toFixed(2);
+    document.getElementById('totalEntries').textContent = timeEntriesData.length;
+    document.getElementById('avgHours').textContent = completedEntries > 0 ? (totalHours / completedEntries).toFixed(2) : '0';
+    document.getElementById('activeWorkers').textContent = activeWorkers.size;
+}
+
+// Create charts
+function createCharts() {
+    // Hours by Worker
+    const workerHours = {};
+    timeEntriesData.forEach(entry => {
+        if (entry.hours_worked) {
+            workerHours[entry.worker.name] = (workerHours[entry.worker.name] || 0) + entry.hours_worked;
+        }
+    });
+    
+    const workerCtx = document.getElementById('workerHoursChart').getContext('2d');
+    new Chart(workerCtx, {
+        type: 'pie',
+        data: {
+            labels: Object.keys(workerHours),
+            datasets: [{
+                data: Object.values(workerHours),
+                backgroundColor: [
+                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
+                    '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    
+    // Hours by Project
+    const projectHours = {};
+    timeEntriesData.forEach(entry => {
+        if (entry.hours_worked) {
+            projectHours[entry.project.name] = (projectHours[entry.project.name] || 0) + entry.hours_worked;
+        }
+    });
+    
+    const projectCtx = document.getElementById('projectHoursChart').getContext('2d');
+    new Chart(projectCtx, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(projectHours),
+            datasets: [{
+                label: 'Hours',
+                data: Object.values(projectHours),
+                backgroundColor: '#36A2EB'
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+// Export to CSV
+function exportToCSV() {
+    const headers = ['Worker', 'Project', 'Department', 'Sub-Department', 'Production Line', 'Start Time', 'End Time', 'Hours', 'Description'];
+    let csvContent = headers.join(',') + '\n';
+    
+    timeEntriesData.forEach(entry => {
+        const row = [
+            entry.worker.name,
+            entry.project.name,
+            entry.sub_department.department.name,
+            entry.sub_department.name,
+            entry.production_line.name,
+            entry.start_time,
+            entry.end_time || 'Active',
+            entry.hours_worked || '',
+            entry.description || ''
+        ];
+        csvContent += row.map(field => `"${field}"`).join(',') + '\n';
+    });
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'time_entries_' + new Date().toISOString().split('T')[0] + '.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+// Filter form submission
+$('#filterForm').submit(function(e) {
+    e.preventDefault();
+    
+    const workerId = $('#filter_worker').val();
+    const projectId = $('#filter_project').val();
+    const startDate = $('#start_date').val();
+    const endDate = $('#end_date').val();
+    
+    let url = '/api/time-entries/?limit=1000';
+    if (workerId) url += `&worker_id=${workerId}`;
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            // Filter data based on other criteria
+            let filteredData = data;
+            
+            if (projectId) {
+                filteredData = filteredData.filter(entry => entry.project_id == projectId);
+            }
+            
+            if (startDate) {
+                filteredData = filteredData.filter(entry => 
+                    new Date(entry.start_time) >= new Date(startDate)
+                );
+            }
+            
+            if (endDate) {
+                filteredData = filteredData.filter(entry => 
+                    new Date(entry.start_time) <= new Date(endDate + 'T23:59:59')
+                );
+            }
+            
+            // Update table and charts with filtered data
+            updateTable(filteredData);
+            timeEntriesData = filteredData;
+            updateSummaryStats();
+            // Note: Charts would need to be recreated with new data
+        });
+});
+
+function updateTable(data) {
+    const tbody = document.querySelector('#timeEntriesTable tbody');
+    tbody.innerHTML = '';
+    
+    data.forEach(entry => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${entry.worker.name}</td>
+            <td>${entry.project.name}</td>
+            <td>${entry.sub_department.department.name}</td>
+            <td>${entry.sub_department.name}</td>
+            <td>${entry.production_line.name}</td>
+            <td>${new Date(entry.start_time).toLocaleString()}</td>
+            <td>${entry.end_time ? new Date(entry.end_time).toLocaleString() : '<span class="badge bg-warning">Active</span>'}</td>
+            <td>${entry.hours_worked ? entry.hours_worked.toFixed(2) : '-'}</td>
+            <td>${entry.description || '-'}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateSummaryStats();
+    createCharts();
+});
+</script>
+{% endblock %}
+

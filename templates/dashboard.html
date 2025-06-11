@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Plant Time Tracker{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-clock"></i> Clock In/Out</h5>
+            </div>
+            <div class="card-body">
+                <form id="clockForm">
+                    <div class="row">
+                        <div class="col-lg-6 col-md-6 col-sm-12 mb-3">
+                            <label for="worker_id" class="form-label">Worker</label>
+                            <select class="form-select" id="worker_id" required>
+                                <option value="">Select Worker</option>
+                                {% for worker in workers %}
+                                <option value="{{ worker.id }}">{{ worker.name }} ({{ worker.employee_id }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-lg-6 col-md-6 col-sm-12 mb-3">
+                            <label for="project_id" class="form-label">Project</label>
+                            <select class="form-select" id="project_id" required>
+                                <option value="">Select Project</option>
+                                {% for project in projects %}
+                                <option value="{{ project.id }}">{{ project.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-lg-6 col-md-6 col-sm-12 mb-3">
+                            <label for="department_id" class="form-label">Department</label>
+                            <select class="form-select" id="department_id" required>
+                                <option value="">Select Department</option>
+                                {% for department in departments %}
+                                <option value="{{ department.id }}">{{ department.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-lg-6 col-md-6 col-sm-12 mb-3">
+                            <label for="sub_department_id" class="form-label">Sub-Department</label>
+                            <select class="form-select" id="sub_department_id" required>
+                                <option value="">Select Sub-Department</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-lg-6 col-md-6 col-sm-12 mb-3">
+                            <label for="production_line_id" class="form-label">Production Line</label>
+                            <select class="form-select" id="production_line_id" required>
+                                <option value="">Select Production Line</option>
+                                {% for line in production_lines %}
+                                <option value="{{ line.id }}">{{ line.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-lg-6 col-md-6 col-sm-12 mb-3">
+                            <label for="description" class="form-label">Description (Optional)</label>
+                            <input type="text" class="form-control" id="description" placeholder="Brief description of work">
+                        </div>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-clock"></i> Clock In
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-users"></i> Active Workers</h5>
+            </div>
+            <div class="card-body">
+                {% if active_entries %}
+                    {% for entry in active_entries %}
+                    <div class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
+                        <div>
+                            <span class="clock-status clocked-in"></span>
+                            <strong>{{ entry.worker.name }}</strong><br>
+                            <small class="text-muted">{{ entry.project.name }}</small>
+                        </div>
+                        <button class="btn btn-danger btn-sm" onclick="clockOut({{ entry.id }})">
+                            <i class="fas fa-clock"></i> Clock Out
+                        </button>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No workers currently clocked in.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Quick Stats</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-lg-3 col-md-6 col-sm-6 col-12 mb-3">
+                        <div class="p-3">
+                            <h3 class="text-primary">{{ workers|length }}</h3>
+                            <p class="mb-0">Total Workers</p>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 col-sm-6 col-12 mb-3">
+                        <div class="p-3">
+                            <h3 class="text-success">{{ active_entries|length }}</h3>
+                            <p class="mb-0">Active Now</p>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 col-sm-6 col-12 mb-3">
+                        <div class="p-3">
+                            <h3 class="text-info">{{ projects|length }}</h3>
+                            <p class="mb-0">Active Projects</p>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 col-sm-6 col-12 mb-3">
+                        <div class="p-3">
+                            <h3 class="text-warning">{{ production_lines|length }}</h3>
+                            <p class="mb-0">Production Lines</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Load sub-departments when department changes
+$('#department_id').change(function() {
+    const departmentId = $(this).val();
+    const subDeptSelect = $('#sub_department_id');
+    
+    subDeptSelect.html('<option value="">Select Sub-Department</option>');
+    
+    if (departmentId) {
+        fetch(`/api/sub-departments/?department_id=${departmentId}`)
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(subDept => {
+                    subDeptSelect.append(`<option value="${subDept.id}">${subDept.name}</option>`);
+                });
+            });
+    }
+});
+
+// Clock in form submission
+$('#clockForm').submit(function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        worker_id: parseInt($('#worker_id').val()),
+        project_id: parseInt($('#project_id').val()),
+        sub_department_id: parseInt($('#sub_department_id').val()),
+        production_line_id: parseInt($('#production_line_id').val()),
+        description: $('#description').val()
+    };
+    
+    fetch('/api/clock-in/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams(formData)
+    })
+    .then(response => {
+        if (response.ok) {
+            alert('Successfully clocked in!');
+            location.reload();
+        } else {
+            response.json().then(data => {
+                alert('Error: ' + data.detail);
+            });
+        }
+    })
+    .catch(error => {
+        alert('Error clocking in: ' + error);
+    });
+});
+
+// Clock out function
+function clockOut(timeEntryId) {
+    if (confirm('Are you sure you want to clock out?')) {
+        fetch(`/api/clock-out/${timeEntryId}`, {
+            method: 'POST'
+        })
+        .then(response => {
+            if (response.ok) {
+                alert('Successfully clocked out!');
+                location.reload();
+            } else {
+                alert('Error clocking out');
+            }
+        })
+        .catch(error => {
+            alert('Error clocking out: ' + error);
+        });
+    }
+}
+</script>
+{% endblock %}
+

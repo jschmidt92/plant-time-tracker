@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  plant-time-tracker:
+    build: .
+    container_name: plant-time-tracker
+    ports:
+      - "${PORT:-8000}:${PORT:-8000}"
+    volumes:
+      - ./data:/app/data
+      - ./plant_time_tracker.db:/app/plant_time_tracker.db
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PORT=${PORT:-8000}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${PORT:-8000}/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Optional: Add a reverse proxy for HTTPS and custom domain
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: plant-time-tracker-nginx
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./ssl:/etc/nginx/ssl:ro
+  #   depends_on:
+  #     - plant-time-tracker
+  #   restart: unless-stopped
+

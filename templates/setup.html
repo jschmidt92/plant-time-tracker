@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+
+{% block title %}Setup - Plant Time Tracker{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-6 col-md-12 mb-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-building"></i> Departments</h5>
+            </div>
+            <div class="card-body">
+                <form id="departmentForm" class="mb-3">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="dept_name" placeholder="Department name" required>
+                        <button class="btn btn-primary" type="submit">Add Department</button>
+                    </div>
+                </form>
+                <div class="list-group">
+                    {% for dept in departments %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ dept.name }}
+                        <span class="badge bg-secondary rounded-pill">{{ dept.sub_departments|length if dept.sub_departments else 0 }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-cogs"></i> Sub-Departments</h5>
+            </div>
+            <div class="card-body">
+                <form id="subDepartmentForm" class="mb-3">
+                    <div class="mb-2">
+                        <select class="form-select" id="parent_dept_id" required>
+                            <option value="">Select Parent Department</option>
+                            {% for dept in departments %}
+                            <option value="{{ dept.id }}">{{ dept.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="sub_dept_name" placeholder="Sub-department name" required>
+                        <button class="btn btn-primary" type="submit">Add Sub-Dept</button>
+                    </div>
+                </form>
+                <div class="list-group">
+                    {% for sub_dept in sub_departments %}
+                    <div class="list-group-item">
+                        <strong>{{ sub_dept.name }}</strong>
+                        <br><small class="text-muted">Parent: {{ sub_dept.department.name }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 col-md-12 mb-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-industry"></i> Production Lines</h5>
+            </div>
+            <div class="card-body">
+                <form id="productionLineForm" class="mb-3">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="line_name" placeholder="Production line name" required>
+                        <button class="btn btn-primary" type="submit">Add Line</button>
+                    </div>
+                </form>
+                <div class="list-group">
+                    {% for line in production_lines %}
+                    <div class="list-group-item">
+                        {{ line.name }}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-users"></i> Workers</h5>
+            </div>
+            <div class="card-body">
+                <form id="workerForm" class="mb-3">
+                    <div class="mb-2">
+                        <input type="text" class="form-control" id="worker_name" placeholder="Worker name" required>
+                    </div>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="employee_id" placeholder="Employee ID" required>
+                        <button class="btn btn-primary" type="submit">Add Worker</button>
+                    </div>
+                </form>
+                <div class="list-group">
+                    {% for worker in workers %}
+                    <div class="list-group-item">
+                        <strong>{{ worker.name }}</strong>
+                        <br><small class="text-muted">ID: {{ worker.employee_id }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-project-diagram"></i> Projects</h5>
+            </div>
+            <div class="card-body">
+                <form id="projectForm" class="mb-3">
+                    <div class="row">
+                        <div class="col-lg-6 col-md-12 mb-2">
+                            <input type="text" class="form-control" id="project_name" placeholder="Project name" required>
+                        </div>
+                        <div class="col-lg-4 col-md-8 mb-2">
+                            <input type="text" class="form-control" id="project_description" placeholder="Description (optional)">
+                        </div>
+                        <div class="col-lg-2 col-md-4 mb-2">
+                            <button class="btn btn-primary w-100" type="submit">Add Project</button>
+                        </div>
+                    </div>
+                </form>
+                <div class="row">
+                    {% for project in projects %}
+                    <div class="col-lg-4 col-md-6 col-sm-12 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title">{{ project.name }}</h6>
+                                {% if project.description %}
+                                <p class="card-text">{{ project.description }}</p>
+                                {% endif %}
+                                <small class="text-muted">Created: {{ project.created_at.strftime('%Y-%m-%d') }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <h6><i class="fas fa-info-circle"></i> Quick Setup for Wall Department</h6>
+            <p class="mb-2">Click the button below to automatically set up the Wall department with its sub-departments and 3 production lines:</p>
+            <button class="btn btn-info" onclick="setupWallDepartment()">Setup Wall Department</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Department form
+$('#departmentForm').submit(function(e) {
+    e.preventDefault();
+    const name = $('#dept_name').val();
+    
+    fetch('/api/departments/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name })
+    })
+    .then(response => {
+        if (response.ok) {
+            location.reload();
+        } else {
+            alert('Error adding department');
+        }
+    });
+});
+
+// Sub-department form
+$('#subDepartmentForm').submit(function(e) {
+    e.preventDefault();
+    const name = $('#sub_dept_name').val();
+    const departmentId = $('#parent_dept_id').val();
+    
+    fetch('/api/sub-departments/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name, department_id: parseInt(departmentId) })
+    })
+    .then(response => {
+        if (response.ok) {
+            location.reload();
+        } else {
+            alert('Error adding sub-department');
+        }
+    });
+});
+
+// Production line form
+$('#productionLineForm').submit(function(e) {
+    e.preventDefault();
+    const name = $('#line_name').val();
+    
+    fetch('/api/production-lines/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name })
+    })
+    .then(response => {
+        if (response.ok) {
+            location.reload();
+        } else {
+            alert('Error adding production line');
+        }
+    });
+});
+
+// Worker form
+$('#workerForm').submit(function(e) {
+    e.preventDefault();
+    const name = $('#worker_name').val();
+    const employeeId = $('#employee_id').val();
+    
+    fetch('/api/workers/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name, employee_id: employeeId })
+    })
+    .then(response => {
+        if (response.ok) {
+            location.reload();
+        } else {
+            alert('Error adding worker');
+        }
+    });
+});
+
+// Project form
+$('#projectForm').submit(function(e) {
+    e.preventDefault();
+    const name = $('#project_name').val();
+    const description = $('#project_description').val();
+    
+    fetch('/api/projects/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name, description: description })
+    })
+    .then(response => {
+        if (response.ok) {
+            location.reload();
+        } else {
+            alert('Error adding project');
+        }
+    });
+});
+
+// Setup Wall Department function
+function setupWallDepartment() {
+    if (confirm('This will create the Wall department with sub-departments (Cutting, Framing, Sheeting/Typar, Window/Door Installation, Loading) and 3 production lines. Continue?')) {
+        // Create Wall department first
+        fetch('/api/departments/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: 'Wall', description: 'Wall manufacturing department' })
+        })
+        .then(response => response.json())
+        .then(department => {
+            const subDepts = ['Cutting', 'Framing', 'Sheeting/Typar', 'Window/Door Installation', 'Loading'];
+            const subDeptPromises = subDepts.map(name => 
+                fetch('/api/sub-departments/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name, department_id: department.id })
+                })
+            );
+            
+            return Promise.all(subDeptPromises);
+        })
+        .then(() => {
+            // Create production lines
+            const lines = ['Line 1', 'Line 2', 'Line 3'];
+            const linePromises = lines.map(name => 
+                fetch('/api/production-lines/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name })
+                })
+            );
+            
+            return Promise.all(linePromises);
+        })
+        .then(() => {
+            alert('Wall department setup completed successfully!');
+            location.reload();
+        })
+        .catch(error => {
+            alert('Error setting up Wall department: ' + error);
+        });
+    }
+}
+</script>
+{% endblock %}
+
