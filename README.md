@@ -32,6 +32,12 @@ The system comes pre-configured with a Wall department structure:
    cd plant-time-tracker
    ```
 
+2. **Set up a virtual environment** (optional but recommended):
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+   ```
+
 2. **Install Python dependencies**:
    ```bash
    pip install -r requirements.txt
